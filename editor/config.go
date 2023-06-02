@@ -2,7 +2,6 @@ package editor
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
@@ -233,51 +232,8 @@ func newConfig(home string) (string, gonvimConfig) {
 }
 
 func detectConfig(home string) (configDir, configFilePath string) {
-	// detect config dir
-	xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
-	settingsfile := "settings.toml"
-	if runtime.GOOS != "windows" {
-		if xdgConfigHome != "" {
-			configDir = filepath.Join(xdgConfigHome, "goneovim")
-		} else {
-			configDir = filepath.Join(home, ".config", "goneovim")
-		}
-		configFilePath = filepath.Join(configDir, settingsfile)
-
-		return
-	} else {
-		if xdgConfigHome != "" {
-			configDir = filepath.Join(xdgConfigHome, "goneovim")
-			configFilePath = filepath.Join(xdgConfigHome, "goneovim", settingsfile)
-		}
-		if isFileExist(configFilePath) {
-			return
-		}
-
-		localappdata := os.Getenv("LOCALAPPDATA")
-		configDir = filepath.Join(localappdata, "goneovim")
-		configFilePath = filepath.Join(localappdata, "goneovim", settingsfile)
-		if isFileExist(configFilePath) {
-			return
-		}
-
-		configDir = filepath.Join(home, ".config", "goneovim")
-		configFilePath = filepath.Join(home, ".config", "goneovim", settingsfile)
-		if isFileExist(configFilePath) {
-			return
-		}
-
-		configDir = filepath.Join(home, ".goneovim")
-		configFilePath = filepath.Join(home, ".goneovim", settingsfile)
-		if isFileExist(configFilePath) {
-			return
-		}
-	}
-
-	// windows
-	localappdata := os.Getenv("LOCALAPPDATA")
-	configDir = filepath.Join(localappdata, "goneovim")
-	configFilePath = filepath.Join(localappdata, "goneovim", settingsfile)
+	configDir = filepath.Join("vim", "config", "goneovim")
+	configFilePath = filepath.Join("vim", "config", "goneovim", "settings.toml")
 
 	return
 }
