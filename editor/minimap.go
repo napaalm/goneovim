@@ -105,25 +105,10 @@ func (m *MiniMap) startMinimapProc(ctx context.Context) {
 	minimapProcessServe := nvim.ChildProcessServe(false)
 	minimapProcessContext := nvim.ChildProcessContext(ctx)
 
-	useWSL := editor.opts.Wsl != nil || editor.config.Editor.UseWSL
-	if runtime.GOOS != "windows" {
-		useWSL = false
-	}
+	// Attaching to vim\nvim\bin\nvim.exe
+	childProcessCmd := nvim.ChildProcessCommand(`vim\nvim\bin\nvim.exe`)
+	neovim, err = nvim.NewChildProcess(minimapProcessArgs, childProcessCmd, minimapProcessServe, minimapProcessContext)
 
-	if editor.opts.Nvim != "" {
-		// Attaching to /path/to/nvim
-		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
-		neovim, err = nvim.NewChildProcess(minimapProcessArgs, childProcessCmd, minimapProcessServe, minimapProcessContext)
-	} else if useWSL {
-		// Attaching remote nvim via wsl
-		neovim, err = newWslProcess()
-	} else if editor.opts.Ssh != "" {
-		// Attaching remote nvim via ssh
-		neovim, err = newRemoteChildProcess()
-	} else {
-		// Attaching to nvim normally
-		neovim, err = nvim.NewChildProcess(minimapProcessArgs, minimapProcessServe, minimapProcessContext)
-	}
 	if err != nil {
 		fmt.Println(err)
 	}

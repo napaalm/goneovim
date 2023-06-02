@@ -84,34 +84,10 @@ func startNvim(signal *neovimSignal, ctx context.Context) (neovim *nvim.Nvim, ui
 	childProcessServe := nvim.ChildProcessServe(false)
 	childProcessContext := nvim.ChildProcessContext(ctx)
 
-	useWSL := editor.opts.Wsl != nil || editor.config.Editor.UseWSL
-	if runtime.GOOS != "windows" {
-		useWSL = false
-	}
+	// Attaching to vim\nvim\bin\nvim.exe
+	childProcessCmd := nvim.ChildProcessCommand(`vim\nvim\bin\nvim.exe`)
+	neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessCmd, childProcessServe, childProcessContext)
 
-	if editor.opts.Server != "" {
-		// Attaching to remote nvim session
-		dialServe := nvim.DialServe(false)
-		dialContext := nvim.DialContext(ctx)
-		neovim, err = nvim.Dial(editor.opts.Server, dialServe, dialContext)
-		uiRemoteAttached = true
-
-	} else if editor.opts.Nvim != "" {
-		// Attaching to /path/to/nvim
-		childProcessCmd := nvim.ChildProcessCommand(editor.opts.Nvim)
-		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessCmd, childProcessServe, childProcessContext)
-	} else if useWSL {
-		// Attaching remote nvim via wsl
-		uiRemoteAttached = true
-		neovim, err = newWslProcess()
-	} else if editor.opts.Ssh != "" {
-		// Attaching remote nvim via ssh
-		uiRemoteAttached = true
-		neovim, err = newRemoteChildProcess()
-	} else {
-		// Attaching to nvim normally
-		neovim, err = nvim.NewChildProcess(childProcessArgs, childProcessServe, childProcessContext)
-	}
 	if err != nil {
 		editor.putLog(err)
 		return nil, false, err
