@@ -1,36 +1,21 @@
 name: Release
 on: 
-  schedule:
-    - cron: '0 2 * * *' # run at 2 AM UTC
   workflow_dispatch:
     inputs:
       tag_name:
         description: 'Tag name for release'
         required: false
-        default: nightly
+        default: staging
   push:
     tags:
-      - v[0-9]+.[0-9]+.[0-9]+
+      - v[0-9]+.[0-9]+.[0-9]+-*
 
 env:
   cache-version: v9
 
 jobs:
 
-  check-new-commit:
-    runs-on: ubuntu-20.04
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - run: >
-        test \( "${{github.event_name}}" == "schedule"
-        -a 0 -lt $(git log --oneline --since "yesterday" -- . ":!.github" ":!.gitignore" ":!.golangci.yml" | wc -l) \)
-        -o \( "${{github.event_name}}" != "schedule" \)
-
   windows:
-    needs: [check-new-commit]
     strategy:
       matrix:
         go-version: [1.18.x]
@@ -151,8 +136,6 @@ jobs:
 
     - if: github.event_name == 'workflow_dispatch'
       run: echo "ARCHIVE_NAME=goneovim-windows" >> $env:GITHUB_ENV
-    - if: github.event_name == 'schedule'
-      run: echo "ARCHIVE_NAME=goneovim-windows" >> $env:GITHUB_ENV
     - if: github.event_name == 'push'
       run: echo "ARCHIVE_NAME=goneovim-${{ steps.version-windows.outputs.GONEOVIM_VERSION }}-windows" >> $env:GITHUB_ENV
 
@@ -187,23 +170,12 @@ jobs:
 
       - if: github.event_name == 'workflow_dispatch'
         run: echo "TAG_NAME=${{ github.event.inputs.tag_name }}" >> $GITHUB_ENV
-      - if: github.event_name == 'schedule'
-        run: echo 'TAG_NAME=nightly' >> $GITHUB_ENV
       - if: github.event_name == 'push'
         run: |
           TAG_NAME=${{ github.ref }}
           echo "TAG_NAME=${TAG_NAME#refs/tags/}" >> $GITHUB_ENV
 
-      - if: env.TAG_NAME == 'nightly'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          (echo 'SUBJECT=Goneovim Nightly build';
-           echo 'PRERELEASE=--prerelease') >> $GITHUB_ENV
-          gh release delete nightly --yes || true
-          git push origin :nightly || true
-
-      - if: env.TAG_NAME != 'nightly'
+      - name: Set release subject
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
